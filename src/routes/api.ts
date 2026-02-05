@@ -32,8 +32,9 @@ adminApi.get('/devices', async (c) => {
     await ensureMoltbotGateway(sandbox, c.env);
 
     // Run moltbot CLI to list devices (CLI is named openclaw until upstream renames)
-    // Must specify --url to connect to the gateway running in the same container
-    const proc = await sandbox.startProcess('openclaw devices list --json --url ws://localhost:18789');
+    // Must specify --url and --token to connect to the gateway running in the same container
+    const token = c.env.MOLTBOT_GATEWAY_TOKEN || '';
+    const proc = await sandbox.startProcess(`openclaw devices list --json --url ws://localhost:18789 --token "${token}"`);
     await waitForProcess(proc, CLI_TIMEOUT_MS);
 
     const logs = await proc.getLogs();
@@ -85,7 +86,8 @@ adminApi.post('/devices/:requestId/approve', async (c) => {
     await ensureMoltbotGateway(sandbox, c.env);
 
     // Run moltbot CLI to approve the device (CLI is named openclaw)
-    const proc = await sandbox.startProcess(`openclaw devices approve ${requestId} --url ws://localhost:18789`);
+    const token = c.env.MOLTBOT_GATEWAY_TOKEN || '';
+    const proc = await sandbox.startProcess(`openclaw devices approve ${requestId} --url ws://localhost:18789 --token "${token}"`);
     await waitForProcess(proc, CLI_TIMEOUT_MS);
 
     const logs = await proc.getLogs();
@@ -117,7 +119,8 @@ adminApi.post('/devices/approve-all', async (c) => {
     await ensureMoltbotGateway(sandbox, c.env);
 
     // First, get the list of pending devices (CLI is named openclaw)
-    const listProc = await sandbox.startProcess('openclaw devices list --json --url ws://localhost:18789');
+    const token = c.env.MOLTBOT_GATEWAY_TOKEN || '';
+    const listProc = await sandbox.startProcess(`openclaw devices list --json --url ws://localhost:18789 --token "${token}"`);
     await waitForProcess(listProc, CLI_TIMEOUT_MS);
 
     const listLogs = await listProc.getLogs();
@@ -144,7 +147,7 @@ adminApi.post('/devices/approve-all', async (c) => {
 
     for (const device of pending) {
       try {
-        const approveProc = await sandbox.startProcess(`openclaw devices approve ${device.requestId} --url ws://localhost:18789`);
+        const approveProc = await sandbox.startProcess(`openclaw devices approve ${device.requestId} --url ws://localhost:18789 --token "${token}"`);
         await waitForProcess(approveProc, CLI_TIMEOUT_MS);
 
         const approveLogs = await approveProc.getLogs();
