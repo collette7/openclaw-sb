@@ -221,14 +221,36 @@ if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN) {
     config.channels.slack.enabled = true;
 }
 
-// Base URL override (e.g., for Cloudflare AI Gateway)
+// Base URL override (e.g., for Cloudflare AI Gateway, Kimi/Moonshot AI)
 // Usage: Set AI_GATEWAY_BASE_URL or ANTHROPIC_BASE_URL to your endpoint like:
 //   https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/anthropic
 //   https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/openai
+//   https://api.moonshot.cn/v1  (for Kimi)
 const baseUrl = (process.env.AI_GATEWAY_BASE_URL || process.env.ANTHROPIC_BASE_URL || '').replace(/\/+$/, '');
 const isOpenAI = baseUrl.endsWith('/openai');
+const isKimi = baseUrl.includes('moonshot.cn');
 
-if (isOpenAI) {
+if (isKimi) {
+    // Configure Kimi (Moonshot AI) - OpenAI-compatible API
+    console.log('Configuring Kimi (Moonshot AI) provider with base URL:', baseUrl);
+    config.models = config.models || {};
+    config.models.providers = config.models.providers || {};
+    config.models.providers.openai = {
+        baseUrl: baseUrl,
+        api: 'openai-responses',
+        models: [
+            { id: 'moonshot-v1-128k', name: 'Kimi 128K', contextWindow: 128000 },
+            { id: 'moonshot-v1-32k', name: 'Kimi 32K', contextWindow: 32000 },
+            { id: 'moonshot-v1-8k', name: 'Kimi 8K', contextWindow: 8000 },
+        ]
+    };
+    // Add models to the allowlist so they appear in /models
+    config.agents.defaults.models = config.agents.defaults.models || {};
+    config.agents.defaults.models['openai/moonshot-v1-128k'] = { alias: 'Kimi 128K' };
+    config.agents.defaults.models['openai/moonshot-v1-32k'] = { alias: 'Kimi 32K' };
+    config.agents.defaults.models['openai/moonshot-v1-8k'] = { alias: 'Kimi 8K' };
+    config.agents.defaults.model.primary = 'openai/moonshot-v1-128k';
+} else if (isOpenAI) {
     // Create custom openai provider config with baseUrl override
     // Omit apiKey so moltbot falls back to OPENAI_API_KEY env var
     console.log('Configuring OpenAI provider with base URL:', baseUrl);
