@@ -126,7 +126,7 @@ debug.get('/gateway-api', async (c) => {
 // GET /debug/cli - Test openclaw CLI commands
 debug.get('/cli', async (c) => {
   const sandbox = c.get('sandbox');
-  const cmd = c.req.query('cmd') || 'clawdbot --help';
+  const cmd = c.req.query('cmd') || 'openclaw --help';
   
   try {
     const proc = await sandbox.startProcess(cmd);
